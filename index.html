@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="IP 주소의 위치 정보와 우편번호를 조회하는 웹 애플리케이션">
+    <title>IP 위치 추적기</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="icon-wrapper">
+                <svg class="location-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="currentColor"/>
+                </svg>
+            </div>
+            <h1>IP 위치 추적기</h1>
+            <p class="subtitle">IP 주소의 위치 정보와 우편번호를 확인하세요</p>
+        </div>
+
+        <div class="search-section">
+            <div class="input-group">
+                <input 
+                    type="text" 
+                    id="ipInput" 
+                    placeholder="IP 주소를 입력하세요 (예: 8.8.8.8)" 
+                    autocomplete="off"
+                />
+                <button id="searchBtn" class="search-btn">
+                    <span class="btn-text">검색</span>
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+            <div id="errorMessage" class="error-message"></div>
+        </div>
+
+        <div id="loadingSpinner" class="loading-spinner">
+            <div class="spinner"></div>
+            <p>정보를 가져오는 중...</p>
+        </div>
+
+        <div id="resultSection" class="result-section">
+            <div class="result-header">
+                <h2>위치 정보</h2>
+                <div class="ip-badge" id="ipBadge"></div>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-card">
+                    <div class="info-icon">📍</div>
+                    <div class="info-content">
+                        <div class="info-label">도시</div>
+                        <div class="info-value" id="city">-</div>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-icon">🏛️</div>
+                    <div class="info-content">
+                        <div class="info-label">지역</div>
+                        <div class="info-value" id="region">-</div>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-icon">🌍</div>
+                    <div class="info-content">
+                        <div class="info-label">국가</div>
+                        <div class="info-value" id="country">-</div>
+                    </div>
+                </div>
+
+                <div class="info-card highlight">
+                    <div class="info-icon">✉️</div>
+                    <div class="info-content">
+                        <div class="info-label">우편번호</div>
+                        <div class="info-value" id="postal">-</div>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-icon">🌐</div>
+                    <div class="info-content">
+                        <div class="info-label">좌표</div>
+                        <div class="info-value" id="coordinates">-</div>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-icon">🕒</div>
+                    <div class="info-content">
+                        <div class="info-label">시간대</div>
+                        <div class="info-value" id="timezone">-</div>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-icon">💰</div>
+                    <div class="info-content">
+                        <div class="info-label">통화</div>
+                        <div class="info-value" id="currency">-</div>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-icon">🏢</div>
+                    <div class="info-content">
+                        <div class="info-label">조직</div>
+                        <div class="info-value" id="org">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
