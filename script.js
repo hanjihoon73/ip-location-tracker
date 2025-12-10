@@ -300,7 +300,62 @@ function extractIPAddresses(data) {
     return ipAddresses;
 }
 
-// Process batch IPs
+// Group IPs by subnet based on IP address class
+// Class A (1-127): Group by first octet
+// Class B (128-191): Group by first two octets
+// Class C (192-223): Group by first three octets
+function groupIPsBySubnet(ipAddresses) {
+    const groups = new Map();
+
+    for (const ip of ipAddresses) {
+        const parts = ip.split('.');
+        const firstOctet = parseInt(parts[0]);
+        let subnet;
+
+        if (firstOctet >= 1 && firstOctet <= 127) {
+            // Class A: Group by first octet
+            subnet = `${parts[0]}`;
+        } else if (firstOctet >= 128 && firstOctet <= 191) {
+            // Class B: Group by first two octets
+            subnet = `${parts[0]}.${parts[1]}`;
+        } else if (firstOctet >= 192 && firstOctet <= 223) {
+            // Class C: Group by first three octets
+            subnet = `${parts[0]}.${parts[1]}.${parts[2]}`;
+        } else {
+            // Other ranges: treat as individual (no grouping)
+            subnet = ip;
+        }
+
+        if (!groups.has(subnet)) {
+            groups.set(subnet, []);
+        }
+        groups.get(subnet).push(ip);
+    }
+
+    return groups;
+}
+
+
+// Get representative IPs from groups (only groups with 2+ IPs)
+function getRepresentativeIPs(groups) {
+    const representatives = new Map(); // subnet -> representative IP
+    const allIPs = [];
+
+    for (const [subnet, ips] of groups.entries()) {
+        if (ips.length >= 2) {
+            // Group has 2+ IPs, use first as representative
+            representatives.set(subnet, ips[0]);
+            allIPs.push(...ips);
+        } else {
+            // Single IP, query it normally
+            allIPs.push(ips[0]);
+        }
+    }
+
+    return { representatives, allIPs };
+}
+
+// Process batch IPs with optimization
 async function processBatchIPs(ipAddresses) {
     // Reset results
     batchResultsData = [];
@@ -310,14 +365,50 @@ async function processBatchIPs(ipAddresses) {
     batchProgress.classList.add('show');
     batchResults.classList.add('show');
 
-    const total = ipAddresses.length;
-    let completed = 0;
+    // Group IPs by subnet (first two octets)
+    const groups = groupIPsBySubnet(ipAddresses);
+    const { representatives, allIPs } = getRepresentativeIPs(groups);
 
-    for (const ip of ipAddresses) {
+    // Determine which IPs to actually query
+    const ipsToQuery = [];
+    const ipToSubnet = new Map(); // IP -> subnet mapping
+
+    for (const [subnet, ips] of groups.entries()) {
+        if (ips.length >= 2) {
+            // Only query the representative
+            const rep = representatives.get(subnet);
+            ipsToQuery.push(rep);
+            // Map all IPs in this group to the subnet
+            for (const ip of ips) {
+                ipToSubnet.set(ip, subnet);
+            }
+        } else {
+            // Query single IP normally
+            ipsToQuery.push(ips[0]);
+            ipToSubnet.set(ips[0], null); // No grouping
+        }
+    }
+
+    // Store query results by subnet
+    const subnetResults = new Map();
+
+    const total = ipAddresses.length;
+    const totalQueries = ipsToQuery.length;
+    let completed = 0;
+    let queriesCompleted = 0;
+
+    // Show optimization info
+    if (totalQueries < total) {
+        currentIPElement.textContent = `최적화: ${total}개 IP 중 ${totalQueries}개만 조회 (${total - totalQueries}개 절약)`;
+        await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+
+    // Query representative IPs
+    for (const ip of ipsToQuery) {
         // Update progress
         currentIPElement.textContent = `현재 조회 중: ${ip}`;
-        progressCounter.textContent = `${completed} / ${total}`;
-        progressBar.style.width = `${(completed / total) * 100}%`;
+        progressCounter.textContent = `조회: ${queriesCompleted} / ${totalQueries}`;
+        progressBar.style.width = `${(queriesCompleted / totalQueries) * 100}%`;
 
         try {
             // Fetch IP location data
@@ -333,52 +424,116 @@ async function processBatchIPs(ipAddresses) {
                 throw new Error(data.reason || 'IP 조회 실패');
             }
 
-            // Add to results
-            const result = {
-                ip: ip,
-                postal: data.postal || '-',
-                city: data.city || '-',
-                region: data.region || '-',
-                country: data.country_name || '-',
-                status: '성공'
-            };
-
-            batchResultsData.push(result);
-            addResultRow(result, true);
+            // Store result
+            const subnet = ipToSubnet.get(ip);
+            if (subnet) {
+                subnetResults.set(subnet, data);
+            } else {
+                subnetResults.set(ip, data);
+            }
 
         } catch (error) {
             console.error(`Error fetching IP ${ip}:`, error);
 
-            // Add error result
-            const result = {
-                ip: ip,
-                postal: '-',
-                city: '-',
-                region: '-',
-                country: '-',
-                status: '실패'
-            };
-
-            batchResultsData.push(result);
-            addResultRow(result, false);
+            // Store error result
+            const subnet = ipToSubnet.get(ip);
+            if (subnet) {
+                subnetResults.set(subnet, { error: true });
+            } else {
+                subnetResults.set(ip, { error: true });
+            }
         }
 
-        completed++;
+        queriesCompleted++;
 
         // Rate limiting - wait 200ms between requests
         await new Promise(resolve => setTimeout(resolve, 200));
     }
 
-    // Update final progress
-    progressCounter.textContent = `${completed} / ${total}`;
-    progressBar.style.width = '100%';
-    currentIPElement.textContent = '완료!';
+// Now create results for representative IPs only
+currentIPElement.textContent = '결과 생성 중...';
 
-    // Hide progress after 2 seconds
-    setTimeout(() => {
-        batchProgress.classList.remove('show');
-    }, 2000);
+// Track which subnets we've already displayed
+const displayedSubnets = new Set();
+const displayedIPs = new Set();
+
+for (const ip of ipAddresses) {
+    const subnet = ipToSubnet.get(ip);
+
+    // Skip if we've already displayed this subnet's representative
+    if (subnet && displayedSubnets.has(subnet)) {
+        continue;
+    }
+
+    // Skip if we've already displayed this individual IP
+    if (!subnet && displayedIPs.has(ip)) {
+        continue;
+    }
+
+    let data;
+    let displayIP;
+    let groupCount = 1;
+
+    if (subnet) {
+        // Use subnet representative's data
+        data = subnetResults.get(subnet);
+        // Get the representative IP for this subnet
+        displayIP = representatives.get(subnet);
+        // Count how many IPs are in this group
+        groupCount = groups.get(subnet).length;
+        displayedSubnets.add(subnet);
+    } else {
+        // Use individual IP's data
+        data = subnetResults.get(ip);
+        displayIP = ip;
+        displayedIPs.add(ip);
+    }
+
+    if (data && !data.error) {
+        // Add to results
+        const result = {
+            ip: displayIP,
+            postal: data.postal || '-',
+            city: data.city || '-',
+            region: data.region || '-',
+            country: data.country_name || '-',
+            status: groupCount > 1 ? `성공 (${groupCount}개 IP)` : '성공',
+            groupCount: groupCount
+        };
+
+        batchResultsData.push(result);
+        addResultRow(result, true);
+    } else {
+        // Add error result
+        const result = {
+            ip: displayIP,
+            postal: '-',
+            city: '-',
+            region: '-',
+            country: '-',
+            status: groupCount > 1 ? `실패 (${groupCount}개 IP)` : '실패',
+            groupCount: groupCount
+        };
+
+        batchResultsData.push(result);
+        addResultRow(result, false);
+    }
+
+    completed++;
 }
+
+// Update final progress
+const displayedCount = batchResultsData.length;
+progressCounter.textContent = `표시: ${displayedCount}개 그룹 (전체 ${total}개 IP, ${totalQueries}회 조회)`;
+progressBar.style.width = '100%';
+currentIPElement.textContent = `완료! (대표 IP ${displayedCount}개 표시, API 호출: ${totalQueries}회, 절약: ${total - totalQueries}회)`;
+
+// Hide progress after 3 seconds
+setTimeout(() => {
+    batchProgress.classList.remove('show');
+}, 3000);
+}
+
 
 // Add result row to table
 function addResultRow(result, success) {
