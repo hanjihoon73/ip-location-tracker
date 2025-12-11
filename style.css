@@ -173,6 +173,47 @@ h1 {
     animation: fadeInUp 0.6s ease 0.2s both;
 }
 
+/* Reusing search-section styles for consistency */
+.student-lookup-section {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    padding: 2rem;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 2rem;
+    animation: fadeInUp 0.6s ease 0.2s both;
+}
+
+/* Specific styling for student ID input */
+#studentIdInput {
+    flex: 2;
+    /* Wider input */
+    padding: 1rem 1.5rem;
+    background: var(--bg-primary);
+    /* Darker background for input */
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    /* Larger text */
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+#studentIdInput:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 4px rgba(79, 172, 254, 0.1);
+    outline: none;
+}
+
+.section-description {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin-top: 0.5rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
 @keyframes fadeInUp {
     from {
         opacity: 0;

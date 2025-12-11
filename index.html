@@ -16,7 +16,7 @@
 
 <body>
     <div class="container">
-        <div class="version-badge">v1.0</div>
+        <div class="version-badge">v1.5</div>
         <div class="header">
             <div class="icon-wrapper">
                 <svg class="location-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -27,6 +27,30 @@
             </div>
             <h1>IP 위치 추적기</h1>
             <p class="subtitle">IP 주소의 위치 정보와 우편번호를 확인하세요</p>
+        </div>
+
+        <!-- Student ID Lookup Section -->
+        <div class="student-lookup-section">
+            <h2 class="section-title">
+                <svg class="title-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" fill="currentColor" />
+                </svg>
+                학생 ID 조회
+            </h2>
+            <p class="section-description">학생 ID를 입력하여 접속 IP 목록과 위치 정보를 확인하세요</p>
+
+            <div class="input-group">
+                <input type="text" id="studentIdInput" placeholder="학생 ID 입력 (예: 14831726232601558)"
+                    autocomplete="off" />
+                <button id="studentLookupBtn" class="search-btn">
+                    <span class="btn-text">조회</span>
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </button>
+            </div>
+            <div id="studentErrorMessage" class="error-message"></div>
         </div>
 
         <div class="search-section">
